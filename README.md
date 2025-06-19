@@ -1,9 +1,7 @@
 # Kubflog
-
-Kubflog is a simple tool for logging Kubernetes cluster events. Just use kubectl and fzf to search for events and then pipe them to kubflog.
+Kubflog is a simple tool for tailing Kubernetes cluster events. Use kubectl and fzf to search for events, then pipe the results to Kubflog.
 
 ## Prerequisites
-
 - kubectl
 - kubectx
 - fzf
@@ -30,7 +28,10 @@ source ~/.zshrc # or ~/.bashrc
 ```
 
 ## Usage
-
 ```bash
-kubectl get events --all-namespaces | fzf | kubflog
+kubflog # tails with out json format and line numbers
+kubflog -j || kubflog --json # tails with json format
+kubflog -t <int> || kube --tail <int> # tails with tail line numbers
+kubflog -j -t <int> # both json and tail line numbers
 ```
+When using the command, Fzf will interactively search through Kubernetes contexts from kubectx and Kubernetes pods, allowing you to select from them.
