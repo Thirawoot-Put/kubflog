@@ -2,6 +2,8 @@
 
 USE_JSON_FORMAT=false
 TAIL_LINES=20
+GREP_STRING=""
+HIGHLIGHT=false
 
  while [[ $# -gt 0 ]]; do
      case "$1" in
@@ -23,13 +25,28 @@ TAIL_LINES=20
              TAIL_LINES=$2
              shift 2 
              ;;
+         -g|--grep)
+             # Validate that the argument to --grep is a string
+             if ! [[ -n $2 ]]; then
+                 echo "Error: --grep requires a value." >&2
+                 exit 1
+             fi
+             GREP_STRING=$2
+             shift 2 
+             ;;
+         -hl|--highlight)
+             HIGHLIGHT=true
+             shift
+             ;;
          -h|--help)
              echo "Usage: $(basename "$0") [options]"
              echo ""
              echo "Options:"
-             echo "  --json | -j          Enable JSON log formatting using 'jq'."
-             echo "  --tail <int> | -t    Retrieve last N lines from logs; Default is $TAIL_LINES (passed to kubectl logs --tail)."
-             echo "  --help | -h          Display this help message."
+             echo "  --json | -j              Enable JSON log formatting using 'jq'."
+             echo "  --tail <int> | -t <int>  Retrieve last N lines from logs; Default is 20 (passed to kubectl logs --tail)."
+             echo "  --grep <str> | -g <str>  Filter logs using grep; Default is no filtering (passed to kubectl logs)."
+             echo "  --highlight | -hl        Highlight log lines using 'jq'. (** if use this --json will not disable **)"
+             echo "  --help | -h              Display this help message."
              echo ""
              echo "Examples:"
              echo "  $(basename "$0") --json"
@@ -44,13 +61,10 @@ TAIL_LINES=20
      esac
  done
 
-# choose kubernetes cluster from kubectx
 kubectx | fzf --header="Choose a cluster" 
 
-# use kubectl list pods and choose by fzf then save pod name and namespace to variable
 PODINFO=$(kubectl get pods -A | fzf --header="Choose a pod")
 
-# split the pod info into pod name and namespace
 IFS=' ' read -r -a POD <<< "$PODINFO"
 
 NAMESPACE=${POD[0]}
@@ -58,8 +72,14 @@ PODNAME=${POD[1]}
 
 echo "Pod name: $PODNAME, namespace: $NAMESPACE"
 
-# log by kubectl logs -n $NAMESPACE $PODNAME
-kubectl logs --follow --tail $TAIL_LINES $PODNAME -n $NAMESPACE | while IFS= read -r line; do
+LOG_CMD="kubectl logs --follow --tail $TAIL_LINES $PODNAME -n $NAMESPACE"
+if [ -n "$GREP_STRING" ] && [ $HIGHLIGHT == true ]; then
+  LOG_CMD="$LOG_CMD | grep --color=always -i $GREP_STRING"
+elif [ -n "$GREP_STRING" ]; then
+  LOG_CMD="$LOG_CMD | grep -i $GREP_STRING"
+fi
+
+eval "$LOG_CMD" | while IFS= read -r line; do
   if [ $USE_JSON_FORMAT == true ]; then
     echo "$line" | jq '.' &>/dev/null
     if [ $? -eq 0 ]; then
