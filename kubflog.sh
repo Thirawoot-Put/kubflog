@@ -5,11 +5,11 @@ TAIL_LINES=20
 
  while [[ $# -gt 0 ]]; do
      case "$1" in
-         --json)
+         -j|--json)
              USE_JSON_FORMAT=true
              shift 
              ;;
-         --tail)
+         -t|--tail)
              # Validate that the argument to --tail is a number
              if ! [[ -n $2 ]]; then
                  echo "Error: --tail requires a value." >&2
@@ -23,13 +23,13 @@ TAIL_LINES=20
              TAIL_LINES=$2
              shift 2 
              ;;
-         --help)
+         -h|--help)
              echo "Usage: $(basename "$0") [options]"
              echo ""
              echo "Options:"
-             echo "  --json        Enable JSON log formatting using 'jq'."
-             echo "  --tail <int>  Retrieve last N lines from logs; Default is $TAIL_LINES (passed to kubectl logs --tail)."
-             echo "  --help        Display this help message."
+             echo "  --json | -j          Enable JSON log formatting using 'jq'."
+             echo "  --tail <int> | -t    Retrieve last N lines from logs; Default is $TAIL_LINES (passed to kubectl logs --tail)."
+             echo "  --help | -h          Display this help message."
              echo ""
              echo "Examples:"
              echo "  $(basename "$0") --json"
